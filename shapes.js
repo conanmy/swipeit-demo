@@ -23,7 +23,8 @@ function Shape(x, y, w, h, fill) {
 // Draws this shape to a given context
 Shape.prototype.draw = function(ctx) {
   ctx.fillStyle = this.fill;
-  ctx.fillRect(this.x, this.y, this.w, this.h);
+  ctx.arc(this.x, this.y, this.w, 0,2*Math.PI);
+  ctx.fill();
 }
 
 // Determine if a point is inside the shape's bounds
@@ -167,7 +168,8 @@ CanvasState.prototype.draw = function() {
       ctx.strokeStyle = this.selectionColor;
       ctx.lineWidth = this.selectionWidth;
       var mySel = this.selection;
-      ctx.strokeRect(mySel.x,mySel.y,mySel.w,mySel.h);
+      ctx.arc(mySel.x,mySel.y,mySel.w,0,2*Math.PI);
+      ctx.stroke();
     }
     
     // ** Add stuff you want drawn on top all the time here **
