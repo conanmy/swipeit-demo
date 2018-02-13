@@ -1,15 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Demo</title>
+<title>Demo</title>
+<style>
+#canvas {
+  border: 1px solid green;
+}
+</style>
 </head>
 <body>
   <canvas id="canvas" width="800" height="400">
     This text is displayed if your browser does not support HTML5 Canvas.
   </canvas>
+<script src="http://hammerjs.github.io/dist/hammer.min.js"></script>
 <script src="./shapes.js"></script>
 <script>
   init();
+  var hammertime = new Hammer(document.getElementById('canvas'));
+  hammertime.get('swipe').set({ direction: Hammer.DIRECTION_VERTICAL });
+  hammertime.on('swipe', function(ev) {
+    console.log(ev);
+  });
 </script>
 </body>
 </html>

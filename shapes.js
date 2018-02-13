@@ -7,6 +7,8 @@
 // Free to use and distribute at will
 // So long as you are nice to people, etc
 
+var reduceRate = 2;
+
 // Constructor for Shape objects to hold data for all drawn objects.
 // For now they will just be defined as rectangles.
 function Shape(x, y, w, h, fill) {
@@ -18,6 +20,7 @@ function Shape(x, y, w, h, fill) {
   this.w = w || 1;
   this.h = h || 1;
   this.fill = fill || '#AAAAAA';
+  this.speed = 0;
 }
 
 // Draws this shape to a given context
