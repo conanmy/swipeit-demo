@@ -79,6 +79,13 @@ function CanvasState(canvas) {
   // Since we still want to use this particular CanvasState in the events we have to save a reference to it.
   // This is our reference!
   var myState = this;
+
+  // added for mobile
+  var hammertime = new Hammer(document.getElementById('canvas'));
+  hammertime.get('swipe').set({ direction: Hammer.DIRECTION_VERTICAL });
+  hammertime.on('swipe', function(ev) {
+    console.log(ev);
+  });
   
   //fixes a problem where double clicking causes text to get selected on the canvas
   canvas.addEventListener('selectstart', function(e) { e.preventDefault(); return false; }, false);
