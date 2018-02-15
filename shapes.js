@@ -7,7 +7,7 @@
 // Free to use and distribute at will
 // So long as you are nice to people, etc
 
-var reduceRate = 2;
+var reduceRate = 1;
 
 // Constructor for Shape objects to hold data for all drawn objects.
 // For now they will just be defined as rectangles.
@@ -20,7 +20,8 @@ function Shape(x, y, w, h, fill) {
   this.w = w || 1;
   this.h = h || 1;
   this.fill = fill || '#AAAAAA';
-  this.speed = 0;
+  this.speedX = 0;
+  this.speedY = 0;
 }
 
 // Draws this shape to a given context
@@ -85,6 +86,11 @@ function CanvasState(canvas) {
   hammertime.get('swipe').set({ direction: Hammer.DIRECTION_VERTICAL });
   hammertime.on('swipe', function(ev) {
     console.log(ev);
+    if (myState.selection) {
+      myState.selection.speedX = ev.velocityX*100;
+      myState.selection.speedY = ev.velocityY*100;
+      myState.valid = false;
+    }
   });
   
   //fixes a problem where double clicking causes text to get selected on the canvas
@@ -116,19 +122,19 @@ function CanvasState(canvas) {
       myState.valid = false; // Need to clear the old selection border
     }
   }, true);
-  canvas.addEventListener('mousemove', function(e) {
-    if (myState.dragging){
-      var mouse = myState.getMouse(e);
-      // We don't want to drag the object by its top-left corner, we want to drag it
-      // from where we clicked. Thats why we saved the offset and use it here
-      myState.selection.x = mouse.x - myState.dragoffx;
-      myState.selection.y = mouse.y - myState.dragoffy;   
-      myState.valid = false; // Something's dragging so we must redraw
-    }
-  }, true);
-  canvas.addEventListener('mouseup', function(e) {
-    myState.dragging = false;
-  }, true);
+  // canvas.addEventListener('mousemove', function(e) {
+  //   if (myState.dragging){
+  //     var mouse = myState.getMouse(e);
+  //     // We don't want to drag the object by its top-left corner, we want to drag it
+  //     // from where we clicked. Thats why we saved the offset and use it here
+  //     myState.selection.x = mouse.x - myState.dragoffx;
+  //     myState.selection.y = mouse.y - myState.dragoffy;   
+  //     myState.valid = false; // Something's dragging so we must redraw
+  //   }
+  // }, true);
+  // canvas.addEventListener('mouseup', function(e) {
+  //   myState.dragging = false;
+  // }, true);
   // double click for making new shapes
   canvas.addEventListener('dblclick', function(e) {
     var mouse = myState.getMouse(e);
@@ -176,6 +182,10 @@ CanvasState.prototype.draw = function() {
     // draw selection
     // right now this is just a stroke along the edge of the selected Shape
     if (this.selection != null) {
+      this.selection.x = this.selection.x + this.selection.speedX;
+      this.selection.y = this.selection.y + this.selection.speedY;
+      this.selection.speedX = this.selection.speedX - reduceRate;
+      this.selection.speedY = this.selection.speedY - reduceRate;
       ctx.strokeStyle = this.selectionColor;
       ctx.lineWidth = this.selectionWidth;
       var mySel = this.selection;
