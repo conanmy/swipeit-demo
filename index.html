@@ -2,17 +2,17 @@
 <html>
 <head>
 <title>Demo</title>
-<style>
-#canvas {
-  border: 1px solid green;
-}
-</style>
+<link rel="stylesheet" href="./index.css" />
 </head>
 <body>
-  <canvas id="canvas" width="800" height="400">
-    This text is displayed if your browser does not support HTML5 Canvas.
-  </canvas>
-<script src="http://hammerjs.github.io/dist/hammer.min.js"></script>
+<div id="wrapper">
+  <div id="container"></div>
+  <div id="output">> Interaction meta will output here.</div>
+</div>
+<div id="description">
+  Flick the bubbles around.
+</div>
+<script src='https://s3-us-west-2.amazonaws.com/s.cdpn.io/374756/zingtouch-1.0.0.min.js'></script>
 <script src="./shapes.js"></script>
 <script>
   init();

@@ -1,242 +1,267 @@
-// By Simon Sarris
-// www.simonsarris.com
-// sarris@acm.org
-//
-// Last update December 2011
-//
-// Free to use and distribute at will
-// So long as you are nice to people, etc
+var NUM_BUBBLES = 10;
 
-var reduceRate = 1;
+var canvas = document.createElement('canvas');
+var canvasPicker = document.createElement('canvas');
+canvas.id = "main-canvas";
+canvasPicker.id = "picker-canvas";
+canvasPicker.style.visibility = "hidden";
+canvasPicker.style.visibility = "hidden";
+canvasPicker.style.position = 'fixed';
 
-// Constructor for Shape objects to hold data for all drawn objects.
-// For now they will just be defined as rectangles.
-function Shape(x, y, w, h, fill) {
-  // This is a very simple and unsafe constructor. All we're doing is checking if the values exist.
-  // "x || 0" just means "if there is a value for x, use that. Otherwise use 0."
-  // But we aren't checking anything else! We could put "Lalala" for the value of x 
-  this.x = x || 0;
-  this.y = y || 0;
-  this.w = w || 1;
-  this.h = h || 1;
-  this.fill = fill || '#AAAAAA';
-  this.speedX = 0;
-  this.speedY = 0;
+var bubbles = [];
+var container = document.getElementById('container');
+container.appendChild(canvas);
+container.appendChild(canvasPicker);
+
+var bBox = container.getBoundingClientRect();
+canvas.width = canvasPicker.width = bBox.width;
+canvas.height = canvasPicker.height = bBox.height;
+
+window.onresize = function(){
+  console.log('fire');
+  resizeCanvas();
 }
 
-// Draws this shape to a given context
-Shape.prototype.draw = function(ctx) {
-  ctx.fillStyle = this.fill;
-  ctx.beginPath();
-  ctx.arc(this.x, this.y, this.w, 0,2*Math.PI);
-  ctx.fill();
+function resizeCanvas(){
+  var container = document.getElementById('container');
+  container.appendChild(canvas);
+  container.appendChild(canvasPicker);
+
+  var bBox = container.getBoundingClientRect();
+  canvas.width = canvasPicker.width = bBox.width;
+  canvas.height = canvasPicker.height = bBox.height;
 }
 
-// Determine if a point is inside the shape's bounds
-Shape.prototype.contains = function(mx, my) {
-  // All we have to do is make sure the Mouse X,Y fall in the area between
-  // the shape's X and (X + Width) and its Y and (Y + Height)
-  return  (this.x <= mx) && (this.x + this.w >= mx) &&
-          (this.y <= my) && (this.y + this.h >= my);
-}
-
-function CanvasState(canvas) {
-  // **** First some setup! ****
+resizeCanvas();
+var canvasRegion = new ZingTouch.Region(document.getElementById('container'));
+//SWIPING
+canvasRegion.bind(canvas, 'swipe', function(e) {
+  var weight = 1.5;
   
-  this.canvas = canvas;
-  this.width = canvas.width;
-  this.height = canvas.height;
-  this.ctx = canvas.getContext('2d');
-  // This complicates things a little but but fixes mouse co-ordinate problems
-  // when there's a border or padding. See getMouse for more detail
-  var stylePaddingLeft, stylePaddingTop, styleBorderLeft, styleBorderTop;
-  if (document.defaultView && document.defaultView.getComputedStyle) {
-    this.stylePaddingLeft = parseInt(document.defaultView.getComputedStyle(canvas, null)['paddingLeft'], 10)      || 0;
-    this.stylePaddingTop  = parseInt(document.defaultView.getComputedStyle(canvas, null)['paddingTop'], 10)       || 0;
-    this.styleBorderLeft  = parseInt(document.defaultView.getComputedStyle(canvas, null)['borderLeftWidth'], 10)  || 0;
-    this.styleBorderTop   = parseInt(document.defaultView.getComputedStyle(canvas, null)['borderTopWidth'], 10)   || 0;
+  setOutput([
+    ['Gesture', 'Swipe'],
+    ['velocity', Math.floor(e.detail.data[0].velocity) + "px/ms"],
+    ['currentDirection', Math.floor(e.detail.data[0].currentDirection) + "°"]
+  ]);
+
+  var canvas = document.getElementById('main-canvas');
+  var canvasRect = canvas.getBoundingClientRect();
+  var x = e.detail.events[0].x - canvasRect.left;
+  var y = e.detail.events[0].y - canvasRect.top;
+
+  bubbles[lastIndex].x = (x < 0) ? 0 : (x > canvasRect.width) ? canvasRect.width : x;
+  bubbles[lastIndex].y = (y < 0) ? 0 : (y > canvasRect.height) ? canvasRect.height : y;
+  var theta = Math.sin((Math.PI / 180) * e.detail.data[0].currentDirection);
+  bubbles[lastIndex].vy = -1 * (2 * (e.detail.data[0].velocity * Math.sin((Math.PI / 180) * e.detail.data[0].currentDirection)));
+  bubbles[lastIndex].vx = 2 * (e.detail.data[0].velocity * Math.cos((Math.PI / 180) * e.detail.data[0].currentDirection));
+});
+
+//PANNING
+var currentIndex = lastIndex = null;
+var customPan = new ZingTouch.Pan({
+  threshold: 1
+});
+var startPan = customPan.start;
+
+customPan.start = function(inputs) {
+  var canvas = document.getElementById('main-canvas');
+  var canvasRect = canvas.getBoundingClientRect();
+
+  var x = inputs[0].current.x - canvasRect.left;
+  var y = inputs[0].current.y - canvasRect.top;
+  currentIndex = getIndex(x, y);
+  if (currentIndex !== null) {
+    bubbles[currentIndex].stopped = true;
   }
-  // Some pages have fixed-position bars (like the stumbleupon bar) at the top or left of the page
-  // They will mess up mouse coordinates and this fixes that
-  var html = document.body.parentNode;
-  this.htmlTop = html.offsetTop;
-  this.htmlLeft = html.offsetLeft;
 
-  // **** Keep track of state! ****
+  return startPan.call(this, inputs);
+}
+canvasRegion.bind(canvas, customPan, function(e) {
+  setOutput([
+    ['Gesture', 'Pan'],
+    ['currentDirection', Math.floor(e.detail.data[0].currentDirection) + "°"],
+    ['directionFromOrigin', Math.floor(e.detail.data[0].directionFromOrigin) + "°"],
+    ['distanceFromOrigin', Math.floor(e.detail.data[0].distanceFromOrigin) + "px"]
+  ]);
   
-  this.valid = false; // when set to false, the canvas will redraw everything
-  this.shapes = [];  // the collection of things to be drawn
-  this.dragging = false; // Keep track of when we are dragging
-  // the current selected object. In the future we could turn this into an array for multiple selection
-  this.selection = null;
-  this.dragoffx = 0; // See mousedown and mousemove events for explanation
-  this.dragoffy = 0;
-  
-  // **** Then events! ****
-  
-  // This is an example of a closure!
-  // Right here "this" means the CanvasState. But we are making events on the Canvas itself,
-  // and when the events are fired on the canvas the variable "this" is going to mean the canvas!
-  // Since we still want to use this particular CanvasState in the events we have to save a reference to it.
-  // This is our reference!
-  var myState = this;
+  var originalEvent = e.detail.events[0].originalEvent;
+  var canvas = document.getElementById('main-canvas');
+  var canvasRect = canvas.getBoundingClientRect();
 
-  // added for mobile
-  var hammertime = new Hammer(document.getElementById('canvas'));
-  hammertime.get('swipe').set({ direction: Hammer.DIRECTION_VERTICAL });
-  hammertime.on('swipe', function(ev) {
-    console.log(ev);
-    if (myState.selection) {
-      myState.selection.speedX = ev.velocityX*100;
-      myState.selection.speedY = ev.velocityY*100;
-      myState.valid = false;
-    }
-  });
-  
-  //fixes a problem where double clicking causes text to get selected on the canvas
-  canvas.addEventListener('selectstart', function(e) { e.preventDefault(); return false; }, false);
-  // Up, down, and move are for dragging
-  canvas.addEventListener('mousedown', function(e) {
-    var mouse = myState.getMouse(e);
-    var mx = mouse.x;
-    var my = mouse.y;
-    var shapes = myState.shapes;
-    var l = shapes.length;
-    for (var i = l-1; i >= 0; i--) {
-      if (shapes[i].contains(mx, my)) {
-        var mySel = shapes[i];
-        // Keep track of where in the object we clicked
-        // so we can move it smoothly (see mousemove)
-        myState.dragoffx = mx - mySel.x;
-        myState.dragoffy = my - mySel.y;
-        myState.dragging = true;
-        myState.selection = mySel;
-        myState.valid = false;
-        return;
+  var x = e.detail.events[0].x - canvasRect.left;
+  var y = e.detail.events[0].y - canvasRect.top;
+
+  var rect = canvas.getBoundingClientRect();
+  bubbles[currentIndex].x = (x < 0) ? 0 : (x > rect.width) ? rect.width : x;
+  bubbles[currentIndex].y = (y < 0) ? 0 : (y > rect.height) ? rect.height : y;
+
+  //Change velocity.
+  bubbles[currentIndex].vy = -1 * Math.sin((Math.PI / 180) * e.detail.data[0].currentDirection);
+  bubbles[currentIndex].vx = Math.cos((Math.PI / 180) * e.detail.data[0].currentDirection);
+});
+
+var endPan = customPan.end;
+customPan.end = function(inputs) {
+  bubbles[currentIndex].stopped = false;
+  lastIndex = currentIndex;
+  currentIndex = null;
+  return endPan.call(this, inputs);
+}
+
+function getIndex(x, y) {
+  x = Math.floor(x);
+  y = Math.floor(y);
+  var canvas = document.getElementById('picker-canvas');
+  ctx = canvas.getContext('2d');
+  var colors = ctx.getImageData(x, y, 1, 1).data;
+  var str = "";
+  for (var i = 0; i < colors.length - 1; i++) {
+    str += colors[i];
+  }
+  return parseInt(str);
+}
+
+var Bubble = function() {
+  this.x = getRandNum(0, canvas.width);
+  this.y = getRandNum(0, canvas.height);
+  this.vx = getRandNum(-1, 1, 2);
+  this.vy = getRandNum(-1, 1, 2);
+  this.radius = 40;
+  this.minRadius = getRandNum(30, 50);
+  this.maxRadius = 50;
+  this.stopped = false;
+  this.grow = true;
+  this.color = 'rgba(' + getRandNum(0, 10) + ',' + getRandNum(0, 250) + ',' + getRandNum(100, 255) + ',' + 0.6 + ')';
+  this.rate = getRandNum(0.1, 0.2, 1);
+};
+
+Bubble.prototype = {
+  render: function(id) {
+    var canvas = document.getElementById('main-canvas');
+    var canvasPicker = document.getElementById('picker-canvas');
+    ctx = canvas.getContext('2d');
+    ctxPicker = canvasPicker.getContext('2d');
+    drawOnCanvas(this, ctx, id, false);
+    drawOnCanvas(this, ctxPicker, id, true);
+
+    function drawOnCanvas(_this, context, id, picker) {
+      id = id + "";
+      var arr = id.split('');
+      while (arr.length < 3) {
+        arr.unshift("0");
       }
-    }
-    // havent returned means we have failed to select anything.
-    // If there was an object selected, we deselect it
-    if (myState.selection) {
-      myState.selection = null;
-      myState.valid = false; // Need to clear the old selection border
-    }
-  }, true);
-  // canvas.addEventListener('mousemove', function(e) {
-  //   if (myState.dragging){
-  //     var mouse = myState.getMouse(e);
-  //     // We don't want to drag the object by its top-left corner, we want to drag it
-  //     // from where we clicked. Thats why we saved the offset and use it here
-  //     myState.selection.x = mouse.x - myState.dragoffx;
-  //     myState.selection.y = mouse.y - myState.dragoffy;   
-  //     myState.valid = false; // Something's dragging so we must redraw
-  //   }
-  // }, true);
-  // canvas.addEventListener('mouseup', function(e) {
-  //   myState.dragging = false;
-  // }, true);
-  // double click for making new shapes
-  canvas.addEventListener('dblclick', function(e) {
-    var mouse = myState.getMouse(e);
-    myState.addShape(new Shape(mouse.x - 10, mouse.y - 10, 20, 20, 'rgba(0,255,0,.6)'));
-  }, true);
-  
-  // **** Options! ****
-  
-  this.selectionColor = '#CC0000';
-  this.selectionWidth = 2;  
-  this.interval = 30;
-  setInterval(function() { myState.draw(); }, myState.interval);
-}
+      if (picker) {
+        var color = arr.join(',');
+        context.beginPath();
+        context.arc(_this.x, _this.y, _this.radius, 0, 2 * Math.PI);
+        context.fillStyle = 'rgba(' + color + ',1)';
+        context.strokeStyle = 'rgba(' + color + ',1)';
+      } else {
+        var color = arr.join(',');
+        context.beginPath();
+        context.arc(_this.x, _this.y, _this.radius, 0, 2 * Math.PI);
+        context.fillStyle = _this.color;
+        context.strokeStyle = (_this.stopped) ? 'rgba(0,0,0,0.5)' : _this.color;
+      }
 
-CanvasState.prototype.addShape = function(shape) {
-  this.shapes.push(shape);
-  this.valid = false;
-}
-
-CanvasState.prototype.clear = function() {
-  this.ctx.clearRect(0, 0, this.width, this.height);
-}
-
-// While draw is called as often as the INTERVAL variable demands,
-// It only ever does something if the canvas gets invalidated by our code
-CanvasState.prototype.draw = function() {
-  // if our state is invalid, redraw and validate!
-  if (!this.valid) {
-    var ctx = this.ctx;
-    var shapes = this.shapes;
-    this.clear();
-    
-    // ** Add stuff you want drawn in the background all the time here **
-    
-    // draw all shapes
-    var l = shapes.length;
-    for (var i = 0; i < l; i++) {
-      var shape = shapes[i];
-      // We can skip the drawing of elements that have moved off the screen:
-      if (shape.x > this.width || shape.y > this.height ||
-          shape.x + shape.w < 0 || shape.y + shape.h < 0) continue;
-      shapes[i].draw(ctx);
+      context.fill();
+      context.stroke();
     }
-    
-    // draw selection
-    // right now this is just a stroke along the edge of the selected Shape
-    if (this.selection != null) {
-      this.selection.x = this.selection.x + this.selection.speedX;
-      this.selection.y = this.selection.y + this.selection.speedY;
-      this.selection.speedX = this.selection.speedX - reduceRate;
-      this.selection.speedY = this.selection.speedY - reduceRate;
-      ctx.strokeStyle = this.selectionColor;
-      ctx.lineWidth = this.selectionWidth;
-      var mySel = this.selection;
-      ctx.beginPath();
-      ctx.arc(mySel.x,mySel.y,mySel.w,0,2*Math.PI);
-      ctx.stroke();
+
+  },
+  update: function() {
+    //UPDATABLE
+    if (this.stopped) {
+      return;
     }
-    
-    // ** Add stuff you want drawn on top all the time here **
-    
-    this.valid = true;
+    //
+    //                // //RADIUS
+    //                if (this.grow) {
+    //                    if (this.radius < this.maxRadius) {
+    //                        this.radius = this.rate + this.radius;
+    //                    } else {
+    //                        this.grow = false;
+    //                        this.radius = this.radius - this.rate;
+    //                    }
+    //                } else {
+    //                    if (this.radius > this.minRadius) {
+    //                        this.radius = this.radius - this.rate;
+    //                    } else {
+    //                        this.grow = true;
+    //                        this.radius = this.rate + this.radius;
+    //                    }
+    //                }
+    //                this.radius = parseFloat(this.radius);
+
+    //MOVEMENT
+    var canvas = document.getElementById('main-canvas');
+    var canvasRect = canvas.getBoundingClientRect();
+    this.x = this.x + (this.vx * 1);
+    this.y = this.y + (this.vy * 1);
+
+    //Change direction / hit a boundary
+    if (this.x > canvasRect.width || this.x < 0) {
+      if (this.x < 0) {
+        this.x = 0;
+      } else {
+        this.x = canvasRect.width;
+      }
+
+      //Reduce velocity
+      var currentDirectionX = (this.vx > 0) ? 1 : -1;
+      this.vx = Math.abs(this.vx) * 0.60; //Reduce velocity
+      this.vx = (this.vx < 1) ? 1 : this.vx;
+      this.vx = (currentDirectionX * -1) * this.vx;
+    }
+
+    if (this.y > canvasRect.height || this.y < 0) {
+      if (this.y < 0) {
+        this.y = 0;
+      } else {
+        this.y = canvasRect.height;
+      }
+
+      var currentDirectionY = (this.vy > 0) ? 1 : -1;
+      this.vy = Math.abs(this.vy) * 0.60; //Reduce velocity
+      this.vy = (this.vy < 1) ? 1 : this.vy;
+      this.vy = (currentDirectionY * -1) * this.vy;
+    }
   }
 }
 
+for (var i = 0; i < NUM_BUBBLES; i++) {
+  var bubble = new Bubble();
+  bubbles.push(bubble);
+  bubble.render(i);
+}
 
-// Creates an object with x and y defined, set to the mouse position relative to the state's canvas
-// If you wanna be super-correct this can be tricky, we have to worry about padding and borders
-CanvasState.prototype.getMouse = function(e) {
-  var element = this.canvas, offsetX = 0, offsetY = 0, mx, my;
-  
-  // Compute the total offset
-  if (element.offsetParent !== undefined) {
-    do {
-      offsetX += element.offsetLeft;
-      offsetY += element.offsetTop;
-    } while ((element = element.offsetParent));
+window.requestAnimationFrame(eventLoop);
+
+function eventLoop(timestamp) {
+  window.requestAnimationFrame(eventLoop);
+  var canvas = document.getElementById('main-canvas');
+  var canvasPicker = document.getElementById('picker-canvas');
+  ctx = canvas.getContext('2d');
+  ctxPicker = canvasPicker.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctxPicker.clearRect(0, 0, canvasPicker.width, canvasPicker.height);
+
+  for (var i = 0; i < bubbles.length; i++) {
+    bubbles[i].update(i);
+    bubbles[i].render(i);
   }
-
-  // Add padding and border style widths to offset
-  // Also add the <html> offsets in case there's a position:fixed bar
-  offsetX += this.stylePaddingLeft + this.styleBorderLeft + this.htmlLeft;
-  offsetY += this.stylePaddingTop + this.styleBorderTop + this.htmlTop;
-
-  mx = e.pageX - offsetX;
-  my = e.pageY - offsetY;
-  
-  // We return a simple javascript object (a hash) with x and y defined
-  return {x: mx, y: my};
 }
 
-// If you dont want to use <body onLoad='init()'>
-// You could uncomment this init() reference and place the script reference inside the body tag
-//init();
-
-function init() {
-  var s = new CanvasState(document.getElementById('canvas'));
-  s.addShape(new Shape(80,40,80,80)); // The default is gray
-  s.addShape(new Shape(60,140,40,60, 'lightskyblue'));
-  // Lets make some partially transparent
-  s.addShape(new Shape(80,150,60,30, 'rgba(127, 255, 212, .5)'));
-  s.addShape(new Shape(125,80,30,80, 'rgba(245, 222, 179, .7)'));
+function getRandNum(min, max, decimals) {
+  decimals = (decimals) ? decimals : 0;
+  return parseFloat((Math.random() * (max - min + 1) + min).toFixed(decimals));
 }
 
-// Now go make something amazing!
+function setOutput(data){
+  var outputStr = "> ";
+  for (var i = 0; i < data.length; i++){
+    outputStr += data[i][0] + ": " + data[i][1] + ((i===data.length-1) ? '' : ' , ');
+  }
+  var output = document.getElementById('output');
+  output.innerHTML = outputStr;
+}

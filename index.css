@@ -1,0 +1,45 @@
+* {
+  box-sizing: border-box;
+}
+
+html,body {
+  margin: 0;
+  padding: 0;
+  font-family: "Helvetica", Arial;
+  height: 100%;
+}
+
+#wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+#container {
+  display: flex;
+  flex: 1;
+  width: 100%;
+}
+#output {
+  background-color: #3B3B3B;
+  width: 100%;
+  display: block;
+  min-height: 30px;
+  padding: 10px;
+  font-size: 0.8em;
+  color: white;
+}
+
+#description {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  color: #777;
+  z-index: -1;
+  height: 100%;
+  width: 100%;
+  font-size: 2rem;
+  text-align: center;
+}
