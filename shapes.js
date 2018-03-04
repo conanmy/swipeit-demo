@@ -124,8 +124,8 @@ function getIndex(x, y) {
 var Bubble = function() {
   this.x = getRandNum(0, canvas.width);
   this.y = getRandNum(0, canvas.height);
-  this.vx = getRandNum(-1, 1, 2);
-  this.vy = getRandNum(-1, 1, 2);
+  this.vx = 0;
+  this.vy = 0;
   this.radius = 40;
   this.minRadius = getRandNum(30, 50);
   this.maxRadius = 50;
@@ -196,6 +196,16 @@ Bubble.prototype = {
     //MOVEMENT
     var canvas = document.getElementById('main-canvas');
     var canvasRect = canvas.getBoundingClientRect();
+    if (Math.abs(this.vx) < 0.01) {
+      this.vx == 0;
+    } else {
+      this.vx = this.vx > 0 ? Math.abs(this.vx) - 0.01 : 0 - (Math.abs(this.vx) - 0.01);
+    }
+    if (Math.abs(this.vy) < 0.01) {
+      this.vy == 0;
+    } else {
+      this.vy = this.vy > 0 ? Math.abs(this.vy) - 0.01 : 0 - (Math.abs(this.vy) - 0.01);
+    }
     this.x = this.x + (this.vx * 1);
     this.y = this.y + (this.vy * 1);
 
