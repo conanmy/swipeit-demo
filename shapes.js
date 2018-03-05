@@ -1,4 +1,5 @@
 var NUM_BUBBLES = 10;
+var FRICTION_VELOCITY = 0.01;
 
 var canvas = document.createElement('canvas');
 var canvasPicker = document.createElement('canvas');
@@ -196,15 +197,15 @@ Bubble.prototype = {
     //MOVEMENT
     var canvas = document.getElementById('main-canvas');
     var canvasRect = canvas.getBoundingClientRect();
-    if (Math.abs(this.vx) < 0.01) {
+    if (Math.abs(this.vx) < FRICTION_VELOCITY) {
       this.vx == 0;
     } else {
-      this.vx = this.vx > 0 ? Math.abs(this.vx) - 0.01 : 0 - (Math.abs(this.vx) - 0.01);
+      this.vx = this.vx > 0 ? Math.abs(this.vx) - FRICTION_VELOCITY : 0 - (Math.abs(this.vx) - FRICTION_VELOCITY);
     }
-    if (Math.abs(this.vy) < 0.01) {
+    if (Math.abs(this.vy) < FRICTION_VELOCITY) {
       this.vy == 0;
     } else {
-      this.vy = this.vy > 0 ? Math.abs(this.vy) - 0.01 : 0 - (Math.abs(this.vy) - 0.01);
+      this.vy = this.vy > 0 ? Math.abs(this.vy) - FRICTION_VELOCITY : 0 - (Math.abs(this.vy) - FRICTION_VELOCITY);
     }
     this.x = this.x + (this.vx * 1);
     this.y = this.y + (this.vy * 1);
@@ -255,6 +256,16 @@ function eventLoop(timestamp) {
   ctxPicker = canvasPicker.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctxPicker.clearRect(0, 0, canvasPicker.width, canvasPicker.height);
+
+  for (var i = 0; i < bubbles.length; i++) {
+    for (var j = i + 1; j < bubbles.length; j++) {
+      if (bubbles[i].vx > 0 || bubbles[i].vy > 0 || bubbles[j].vx > 0 || bubbles[j].vy > 0) {
+        if (Math.pow(bubbles[i].x - bubbles[y].x, 2) + Math.pow(bubbles[i].y - bubbles[y].y, 2) <= Math.pow(bubbles[i].radius + bubbles[j].radius, 2)) {
+          i.y - j.y / Math.sqrt(Math.pow(i.x - j.x, 2) + Math.pow(i.y - j.y, 2))
+        }
+      }
+    }
+  }
 
   for (var i = 0; i < bubbles.length; i++) {
     bubbles[i].update(i);
