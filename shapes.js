@@ -128,12 +128,9 @@ var Bubble = function() {
   this.vx = 0;
   this.vy = 0;
   this.radius = 40;
-  this.minRadius = getRandNum(30, 50);
-  this.maxRadius = 50;
   this.stopped = false;
   this.grow = true;
   this.color = 'rgba(' + getRandNum(0, 10) + ',' + getRandNum(0, 250) + ',' + getRandNum(100, 255) + ',' + 0.6 + ')';
-  this.rate = getRandNum(0.1, 0.2, 1);
 };
 
 Bubble.prototype = {
@@ -175,24 +172,6 @@ Bubble.prototype = {
     if (this.stopped) {
       return;
     }
-    //
-    //                // //RADIUS
-    //                if (this.grow) {
-    //                    if (this.radius < this.maxRadius) {
-    //                        this.radius = this.rate + this.radius;
-    //                    } else {
-    //                        this.grow = false;
-    //                        this.radius = this.radius - this.rate;
-    //                    }
-    //                } else {
-    //                    if (this.radius > this.minRadius) {
-    //                        this.radius = this.radius - this.rate;
-    //                    } else {
-    //                        this.grow = true;
-    //                        this.radius = this.rate + this.radius;
-    //                    }
-    //                }
-    //                this.radius = parseFloat(this.radius);
 
     //MOVEMENT
     var canvas = document.getElementById('main-canvas');
