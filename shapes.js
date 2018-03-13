@@ -241,7 +241,7 @@ function eventLoop(timestamp) {
       if (bubbles[i].vx > 0 || bubbles[i].vy > 0 || bubbles[j].vx > 0 || bubbles[j].vy > 0) {
         if (Math.pow(bubbles[i].x - bubbles[j].x, 2) + Math.pow(bubbles[i].y - bubbles[j].y, 2) <= Math.pow(bubbles[i].radius + bubbles[j].radius, 2)) {
           var ix = bubbles[i].x, iy = bubbles[i].y, jx = bubbles[j].x, jy = bubbles[j].y;
-          var ivx = bubbles[i].vx, ivy = bubbles[i].y, jvx = bubbles[j].vx, jvy = bubbles[j].vy;
+          var ivx = bubbles[i].vx, ivy = bubbles[i].vy, jvx = bubbles[j].vx, jvy = bubbles[j].vy;
           var d = Math.sqrt(Math.pow(ix - jx, 2) + Math.pow(iy - jy, 2));
           var nx = (jx - ix) / d;
           var ny = (jy - iy) / d;
