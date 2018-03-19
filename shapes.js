@@ -204,6 +204,11 @@ Bubble.prototype = {
       this.vx = (currentDirectionX * -1) * this.vx;
     }
 
+    if (checkHittingHole(this, canvasRect)) {
+      bubble.drop();
+      return;
+    }
+
     if (this.y > canvasRect.height || this.y < 0) {
       if (this.y < 0) {
         this.y = 0;
@@ -273,4 +278,9 @@ function setOutput(data){
   }
   var output = document.getElementById('output');
   output.innerHTML = outputStr;
+}
+
+function checkHittingHole(bubble, canvasRect) {
+  return (bubble.x <= 0 && (canvasRect.height - bubble.y < 80  || bubble.y < 80))
+    || (bubble.y <= 0 && (canvasRect.width - bubble.x < 80  || bubble.x < 80));
 }
