@@ -33,6 +33,19 @@ function resizeCanvas(){
   canvas.height = canvasPicker.height = bBox.height;
 }
 
+function drawHoles() {
+  var canvas = document.getElementById('main-canvas');
+  var canvasRect = canvas.getBoundingClientRect();
+  ctx = canvas.getContext('2d');
+  var holes = [[0, 0], [0, canvasRect.height], [canvasRect.width, 0], [canvasRect.width, canvasRect.height]];
+  for (var i = 0; i < holes.length; i++) {
+    ctx.beginPath();
+    ctx.arc(holes[i][0], holes[i][1], 80, 0, 2 * Math.PI);
+    ctx.fillStyle = '#008000';
+    ctx.fill();
+  }
+}
+
 resizeCanvas();
 var canvasRegion = new ZingTouch.Region(document.getElementById('container'));
 //SWIPING
@@ -135,6 +148,9 @@ var Bubble = function() {
 
 Bubble.prototype = {
   render: function(id) {
+    if (this.dropped) {
+      return;
+    }
     var canvas = document.getElementById('main-canvas');
     var canvasPicker = document.getElementById('picker-canvas');
     ctx = canvas.getContext('2d');
@@ -169,7 +185,7 @@ Bubble.prototype = {
   },
   update: function() {
     //UPDATABLE
-    if (this.stopped) {
+    if (this.stopped || this.dropped) {
       return;
     }
 
@@ -205,7 +221,7 @@ Bubble.prototype = {
     }
 
     if (checkHittingHole(this, canvasRect)) {
-      bubble.drop();
+      this.dropped = true;
       return;
     }
 
@@ -240,6 +256,8 @@ function eventLoop(timestamp) {
   ctxPicker = canvasPicker.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctxPicker.clearRect(0, 0, canvasPicker.width, canvasPicker.height);
+
+  drawHoles();
 
   for (var i = 0; i < bubbles.length; i++) {
     for (var j = i + 1; j < bubbles.length; j++) {
