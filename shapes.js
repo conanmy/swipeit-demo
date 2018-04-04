@@ -83,7 +83,10 @@ customPan.start = function(inputs) {
 
   var x = inputs[0].current.x - canvasRect.left;
   var y = inputs[0].current.y - canvasRect.top;
-  currentIndex = getIndex(x, y);
+  let tempIndex = getIndex(x, y);
+  if (bubbles[tempIndex].white === true) {
+    currentIndex = tempIndex;
+  }
   if (currentIndex !== null) {
     bubbles[currentIndex].stopped = true;
   }
@@ -97,7 +100,9 @@ canvasRegion.bind(canvas, customPan, function(e) {
     ['directionFromOrigin', Math.floor(e.detail.data[0].directionFromOrigin) + "°"],
     ['distanceFromOrigin', Math.floor(e.detail.data[0].distanceFromOrigin) + "px"]
   ]);
-  
+  if (!currentIndex) {
+    return;
+  }
   var originalEvent = e.detail.events[0].originalEvent;
   var canvas = document.getElementById('main-canvas');
   var canvasRect = canvas.getBoundingClientRect();
@@ -116,6 +121,9 @@ canvasRegion.bind(canvas, customPan, function(e) {
 
 var endPan = customPan.end;
 customPan.end = function(inputs) {
+  if (!currentIndex) {
+    return;
+  }
   bubbles[currentIndex].stopped = false;
   lastIndex = currentIndex;
   currentIndex = null;
@@ -135,15 +143,16 @@ function getIndex(x, y) {
   return parseInt(str);
 }
 
-var Bubble = function() {
+var Bubble = function(white) {
   this.x = getRandNum(0, canvas.width);
   this.y = getRandNum(0, canvas.height);
   this.vx = 0;
   this.vy = 0;
   this.radius = 40;
   this.stopped = false;
+  this.white = white;
   this.grow = true;
-  this.color = 'rgba(' + getRandNum(0, 10) + ',' + getRandNum(0, 250) + ',' + getRandNum(100, 255) + ',' + 0.6 + ')';
+  this.color = white ? '#000000' : 'rgba(' + getRandNum(0, 10) + ',' + getRandNum(0, 250) + ',' + getRandNum(100, 255) + ',' + 0.6 + ')';
 };
 
 Bubble.prototype = {
@@ -241,7 +250,7 @@ Bubble.prototype = {
 }
 
 for (var i = 0; i < NUM_BUBBLES; i++) {
-  var bubble = new Bubble();
+  var bubble = new Bubble((i == NUM_BUBBLES - 1) ? true : false);
   bubbles.push(bubble);
   bubble.render(i);
 }
